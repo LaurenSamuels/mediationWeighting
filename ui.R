@@ -56,7 +56,22 @@ shinyUI(fluidPage(
             ), # end sidebarPanel
 
         mainPanel(
-            plotOutput("wtPlot")
+            plotOutput("wtPlot"),
+            tags$hr(),
+            h4("Original, by A"),
+            verbatimTextOutput("showtabOrigA"),
+            h4("Weighted, by A"),
+            verbatimTextOutput("showtabWtdA"),
+            tags$hr(),
+            h4("Original, by A*"),
+            verbatimTextOutput("showtabOrigA_star"),
+            h4("Weighted, by A*"),
+            verbatimTextOutput("showtabWtdA_star"),
+            tags$hr(),
+            h4("Original, by M"),
+            verbatimTextOutput("showtabOrigM"),
+            h4("Weighted, by M"),
+            verbatimTextOutput("showtabWtdM")
         )
     )
 ))

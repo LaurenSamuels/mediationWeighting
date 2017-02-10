@@ -1,5 +1,8 @@
 library(shiny)
 library(ggplot2)
+library(survey)
+library(tableone)
+
 
 shinyServer(function(input, output) {
     pC1   <- reactive(input$probC)
@@ -37,19 +40,30 @@ shinyServer(function(input, output) {
         dat <- rbind(dat, dat)
         dat <- within(dat, {
             A_star <- c(A[1:n], 1 - A[1:n])
+            AM <- paste0(A, M)
+            A_starM <- paste0(A_star, M)
+            
             A.factor <- factor(A, levels= 0:1, labels= c('A0', 'A1'))
             M.factor <- factor(M, levels= 0:1, labels= c('M0', 'M1'))
             C.factor <- factor(C, levels= 0:1, labels= c('C0', 'C1'))
-            A_star.factor <- factor(A_star)
+            A_star.factor <- factor(A_star, levels= 0:1,
+                labels= c('A*0', 'A*1'))
+            AM.factor <- factor(AM)
+            A_starM.factor <- factor(A_starM)
+            
             type <- factor(rep(c("Orig", "Supp"), each= n))
         })
         
         dat    
     })
     
-    propTable <- reactive({
+    propTableAMC <- reactive({
         # A in rows, M in cols
         table(dat()$A, dat()$M, dat()$C) 
+    })
+    propTableAC <- reactive({
+        # A in rows, C in cols
+        table(dat()$A, dat()$C) 
     })
     propTableA <- reactive({
         table(dat()$A) / (n * 2)    
@@ -60,54 +74,171 @@ shinyServer(function(input, output) {
         
         wM_num <- apply(datw[, c("A_star", "M", "C")], 1,
             function(vec) {
-                v1 <- propTable()[vec[1] + 1, vec[2] + 1, vec[3] + 1]
-                v2 <- propTable()[(1 - vec[1]) + 1, vec[2] + 1, vec[3] + 1]
+                v1 <- propTableAMC()[vec[1] + 1, vec[2] + 1, vec[3] + 1]
+                v2 <- propTableAMC()[vec[1] + 1, (1 - vec[2]) + 1, vec[3] + 1]
                 v1 / (v1 + v2)
             }
         )
         wM_denom <- apply(datw[, c("A", "M", "C")], 1,
             function(vec) {
-                v1 <- propTable()[vec[1] + 1, vec[2] + 1, vec[3] + 1]
-                v2 <- propTable()[(1 - vec[1]) + 1, vec[2] + 1, vec[3] + 1]
+                v1 <- propTableAMC()[vec[1] + 1, vec[2] + 1, vec[3] + 1]
+                v2 <- propTableAMC()[vec[1] + 1, (1 - vec[2]) + 1, vec[3] + 1]
                 v1 / (v1 + v2)
             }
         )
-        #wA_num <- sapply(datw[, c("A")],
-        #    function(x) propTableA()[x + 1]
-        #)
-        #wA_denom <- apply(datw[, c("A", "M", "C")], 1,
-                # wrong
-        #    function(vec) propTable()[vec[1] + 1, vec[2] + 1, vec[3] + 1]
-        #)
+        wA_num <- sapply(datw[, c("A")],
+            function(x) propTableA()[x + 1]
+        )
+        wA_denom <- apply(datw[, c("A", "C")], 1,
+            function(vec) {
+                v1 <- propTableAC()[vec[1] + 1, vec[2] + 1]
+                v2 <- propTableAC()[(1 - vec[1]) + 1, vec[2] + 1]
+                v1 / (v1 + v2)
+            }
+        )
         
         datw <- within(datw, {
-            #wA <- wA_num / wA_denom
+            wA <- wA_num / wA_denom
             wM <- wM_num / wM_denom
+            W <- wA * wM
         })
         datw
     })
     datWithWtsWide <- reactive({
         datOrig <- datWithWts()[datWithWts()$type == "Orig", ]    
         datSupp <- datWithWts()[datWithWts()$type == "Supp", ]  
-        cbind(datOrig, wM2 = datSupp$wM)
+        cbind(datOrig, wM2 = datSupp$wM, W2= datSupp$W)
     })
     
     output$wtPlot <- renderPlot({
-        wMrange <- range(datWithWtsWide()$wM)
-        wM2range <- range(datWithWtsWide()$wM2)
+        #wMrange <- range(datWithWtsWide()$wM)
+        #wM2range <- range(datWithWtsWide()$wM2)
+        Wrange <- range(datWithWtsWide()$W)
+        W2range <- range(datWithWtsWide()$W2)
         lims <- 
-            c(min(wMrange[1], wM2range[1]), max(wMrange[2], wM2range[2]))
+            #c(min(wMrange[1], wM2range[1]), max(wMrange[2], wM2range[2]))
+            c(min(Wrange[1], W2range[1]), max(Wrange[2], W2range[2]))
         
         ggplot(data= datWithWtsWide(),
-            mapping= aes(x= wM, y= wM2, colour= C.factor)) +
+            mapping=  aes(
+                #x= wM, y= wM2, 
+                x= W, y= W2, 
+                colour= C.factor)) +
         geom_abline(slope= 1, intercept= 0) +
         geom_point(size= 3, alpha= 0.1) +
         xlim(lims) +
         ylim(lims) + 
-        xlab("W_M on original row") +
-        ylab("W_M on supplemental row") +
+        #xlab("W_M on original row") +
+        #ylab("W_M on supplemental row") +
+        xlab("W on original row") +
+        ylab("W on supplemental row") +
         facet_grid(A.factor ~ M.factor)    
     
     })
   
+    
+    vars1 <- c("C.factor", "M.factor", "AM.factor", "A_starM.factor")
+    vars2 <- c("A.factor", "M.factor", "AM.factor", "A_starM.factor")
+    tabOrigA <- reactive({
+        ## Create a TableOne object
+        CreateTableOne(
+            vars       = vars1,
+            strata     = "A.factor",
+            data       = datWithWts(),
+            factorVars = vars1,
+            includeNA  = FALSE,
+            test       = FALSE,
+            smd        = TRUE
+        )
+    })    
+    tabWtdA <- reactive({
+        # Create a survey object
+        svydat <- svydesign(ids = ~ 0, data = datWithWts(), 
+            weights = ~ W)
+
+        ## Create a TableOne object
+        svyCreateTableOne(
+            vars       = vars1,
+            strata     = "A.factor",
+            data       = svydat,
+            factorVars = vars1,
+            includeNA  = FALSE,
+            test       = FALSE,
+            smd        = TRUE
+        )
+    })    
+    tabOrigA_star <- reactive({
+        ## Create a TableOne object
+        CreateTableOne(
+            vars       = vars1,
+            strata     = "A_star.factor",
+            data       = datWithWts(),
+            factorVars = vars1,
+            includeNA  = FALSE,
+            test       = FALSE,
+            smd        = TRUE
+        )
+    })    
+    tabWtdA_star <- reactive({
+        # Create a survey object
+        svydat <- svydesign(ids = ~ 0, data = datWithWts(), 
+            weights = ~ W)
+
+        ## Create a TableOne object
+        svyCreateTableOne(
+            vars       = vars1,
+            strata     = "A_star.factor",
+            data       = svydat,
+            factorVars = vars1,
+            includeNA  = FALSE,
+            test       = FALSE,
+            smd        = TRUE
+        )
+    })    
+    tabOrigM <- reactive({
+        ## Create a TableOne object
+        CreateTableOne(
+            vars       = vars2,
+            strata     = "M.factor",
+            data       = datWithWts(),
+            factorVars = vars2,
+            includeNA  = FALSE,
+            test       = FALSE,
+            smd        = TRUE
+        )
+    })    
+    tabWtdM <- reactive({
+        # Create a survey object
+        svydat <- svydesign(ids = ~ 0, data = datWithWts(), 
+            weights = ~ W)
+
+        ## Create a TableOne object
+        svyCreateTableOne(
+            vars       = vars2,
+            strata     = "M.factor",
+            data       = svydat,
+            factorVars = vars2,
+            includeNA  = FALSE,
+            test       = FALSE,
+            smd        = TRUE
+        )
+    })    
+    output$showtabOrigA <- renderPrint({
+        print(tabOrigA())    
+    })
+    output$showtabWtdA <- renderPrint({
+        print(tabWtdA())    
+    })
+    output$showtabOrigA_star <- renderPrint({
+        print(tabOrigA_star())    
+    })
+    output$showtabWtdA_star <- renderPrint({
+        print(tabWtdA_star())    
+    })
+    output$showtabOrigM <- renderPrint({
+        print(tabOrigM())    
+    })
+    output$showtabWtdM <- renderPrint({
+        print(tabWtdM())    
+    })
 })
