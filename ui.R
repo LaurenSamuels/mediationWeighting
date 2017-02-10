@@ -58,20 +58,17 @@ shinyUI(fluidPage(
         mainPanel(
             plotOutput("wtPlot"),
             tags$hr(),
-            h4("Original, by A"),
-            verbatimTextOutput("showtabOrigA"),
-            h4("Weighted, by A"),
-            verbatimTextOutput("showtabWtdA"),
+            h4("Original sample, shown by A"),
+            verbatimTextOutput("showtabOrig"),
+            h4("Fully weighted sample, shown by A"),
+            verbatimTextOutput("showtabWtdW"),
             tags$hr(),
-            h4("Original, by A*"),
-            verbatimTextOutput("showtabOrigA_star"),
-            h4("Weighted, by A*"),
-            verbatimTextOutput("showtabWtdA_star"),
+            h4("W_A-weighted sample, shown by A"),
+            verbatimTextOutput("showtabWtdWa"),
             tags$hr(),
-            h4("Original, by M"),
-            verbatimTextOutput("showtabOrigM"),
-            h4("Weighted, by M"),
-            verbatimTextOutput("showtabWtdM")
+            h4("W_M-weighted sample, shown by A"),
+            verbatimTextOutput("showtabWtdWm"),
+            tags$hr()
         )
     )
 ))

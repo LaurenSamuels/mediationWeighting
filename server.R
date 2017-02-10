@@ -138,8 +138,7 @@ shinyServer(function(input, output) {
   
     
     vars1 <- c("C.factor", "M.factor", "A_star.factor", "AM.factor", "A_starM.factor")
-    vars2 <- c("A.factor", "M.factor", "A_star.factor", "AM.factor", "A_starM.factor")
-    tabOrigA <- reactive({
+    tabOrig <- reactive({
         ## Create a TableOne object
         CreateTableOne(
             vars       = vars1,
@@ -151,7 +150,7 @@ shinyServer(function(input, output) {
             smd        = TRUE
         )
     })    
-    tabWtdA <- reactive({
+    tabWtdW <- reactive({
         # Create a survey object
         svydat <- svydesign(ids = ~ 0, data = datWithWts(), 
             weights = ~ W)
@@ -167,27 +166,15 @@ shinyServer(function(input, output) {
             smd        = TRUE
         )
     })    
-    tabOrigA_star <- reactive({
-        ## Create a TableOne object
-        CreateTableOne(
-            vars       = vars1,
-            strata     = "A_star.factor",
-            data       = datWithWts(),
-            factorVars = vars1,
-            includeNA  = FALSE,
-            test       = FALSE,
-            smd        = TRUE
-        )
-    })    
-    tabWtdA_star <- reactive({
+    tabWtdWa <- reactive({
         # Create a survey object
         svydat <- svydesign(ids = ~ 0, data = datWithWts(), 
-            weights = ~ W)
+            weights = ~ wA)
 
         ## Create a TableOne object
         svyCreateTableOne(
             vars       = vars1,
-            strata     = "A_star.factor",
+            strata     = "A.factor",
             data       = svydat,
             factorVars = vars1,
             includeNA  = FALSE,
@@ -195,50 +182,32 @@ shinyServer(function(input, output) {
             smd        = TRUE
         )
     })    
-    tabOrigM <- reactive({
-        ## Create a TableOne object
-        CreateTableOne(
-            vars       = vars2,
-            strata     = "M.factor",
-            data       = datWithWts(),
-            factorVars = vars2,
-            includeNA  = FALSE,
-            test       = FALSE,
-            smd        = TRUE
-        )
-    })    
-    tabWtdM <- reactive({
+    tabWtdWm <- reactive({
         # Create a survey object
         svydat <- svydesign(ids = ~ 0, data = datWithWts(), 
-            weights = ~ W)
+            weights = ~ wM)
 
         ## Create a TableOne object
         svyCreateTableOne(
-            vars       = vars2,
-            strata     = "M.factor",
+            vars       = vars1,
+            strata     = "A.factor",
             data       = svydat,
-            factorVars = vars2,
+            factorVars = vars1,
             includeNA  = FALSE,
             test       = FALSE,
             smd        = TRUE
         )
     })    
-    output$showtabOrigA <- renderPrint({
-        print(tabOrigA())    
+    output$showtabOrig <- renderPrint({
+        print(tabOrig())    
     })
-    output$showtabWtdA <- renderPrint({
-        print(tabWtdA())    
+    output$showtabWtdW <- renderPrint({
+        print(tabWtdW())    
     })
-    output$showtabOrigA_star <- renderPrint({
-        print(tabOrigA_star())    
+    output$showtabWtdWa <- renderPrint({
+        print(tabWtdWa())    
     })
-    output$showtabWtdA_star <- renderPrint({
-        print(tabWtdA_star())    
-    })
-    output$showtabOrigM <- renderPrint({
-        print(tabOrigM())    
-    })
-    output$showtabWtdM <- renderPrint({
-        print(tabWtdM())    
+    output$showtabWtdWm <- renderPrint({
+        print(tabWtdWm())    
     })
 })
