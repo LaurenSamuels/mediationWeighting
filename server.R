@@ -137,8 +137,8 @@ shinyServer(function(input, output) {
     })
   
     
-    vars1 <- c("C.factor", "M.factor", "AM.factor", "A_starM.factor")
-    vars2 <- c("A.factor", "M.factor", "AM.factor", "A_starM.factor")
+    vars1 <- c("C.factor", "M.factor", "A_star.factor", "AM.factor", "A_starM.factor")
+    vars2 <- c("A.factor", "M.factor", "A_star.factor", "AM.factor", "A_starM.factor")
     tabOrigA <- reactive({
         ## Create a TableOne object
         CreateTableOne(
