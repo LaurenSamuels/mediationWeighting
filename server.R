@@ -132,8 +132,7 @@ shinyServer(function(input, output) {
         #ylab("W_M on supplemental row") +
         xlab("W on original row") +
         ylab("W on supplemental row") +
-        facet_grid(A.factor ~ M.factor)    
-    
+        facet_grid(M.factor ~ A.factor)    
     })
   
     
