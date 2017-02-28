@@ -52,8 +52,10 @@ shinyServer(function(input, output) {
             A_starM.factor <- factor(A_starM)
             
             type <- factor(rep(c("Orig", "Supp"), each= n))
+            
+            Ycont <- 1.5*A + 1*M + 0.5*C + rnorm(2*n, sd= 0.1)
+            Ybin <- rbinom(2*n, 1, plogis(Ycont/2)) 
         })
-        
         dat    
     })
     
@@ -137,6 +139,7 @@ shinyServer(function(input, output) {
   
     
     vars1 <- c("C.factor", "M.factor", "A_star.factor", "AM.factor", "A_starM.factor")
+    vars2 <- c("C.factor", "M.factor", "A.factor", "AM.factor", "A_starM.factor")
     tabOrig <- reactive({
         ## Create a TableOne object
         CreateTableOne(
@@ -149,17 +152,29 @@ shinyServer(function(input, output) {
             smd        = TRUE
         )
     })    
+    svydatW <- reactive({
+        svydesign(ids = ~ 0, data = datWithWts(), 
+        weights = ~ W)
+    })
     tabWtdW <- reactive({
-        # Create a survey object
-        svydat <- svydesign(ids = ~ 0, data = datWithWts(), 
-            weights = ~ W)
-
         ## Create a TableOne object
         svyCreateTableOne(
             vars       = vars1,
             strata     = "A.factor",
-            data       = svydat,
+            data       = svydatW(),
             factorVars = vars1,
+            includeNA  = FALSE,
+            test       = FALSE,
+            smd        = TRUE
+        )
+    })    
+    tabWtdW_byA_star <- reactive({
+        ## Create a TableOne object
+        svyCreateTableOne(
+            vars       = vars2,
+            strata     = "A_star.factor",
+            data       = svydatW(),
+            factorVars = vars2,
             includeNA  = FALSE,
             test       = FALSE,
             smd        = TRUE
@@ -203,10 +218,20 @@ shinyServer(function(input, output) {
     output$showtabWtdW <- renderPrint({
         print(tabWtdW())    
     })
+    output$showtabWtdW_byA_star <- renderPrint({
+        print(tabWtdW_byA_star())    
+    })
     output$showtabWtdWa <- renderPrint({
         print(tabWtdWa())    
     })
     output$showtabWtdWm <- renderPrint({
         print(tabWtdWm())    
     })
+    
+    
+    # regressions
+    output$lm1 <- renderPrint({
+        print(svyglm(Ycont ~ A + A_star, svydatW()))    
+    })
+    
 })

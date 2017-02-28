@@ -62,12 +62,16 @@ shinyUI(fluidPage(
             verbatimTextOutput("showtabOrig"),
             h4("Fully weighted sample, shown by A"),
             verbatimTextOutput("showtabWtdW"),
+            h4("Fully weighted sample, shown by A*"),
+            verbatimTextOutput("showtabWtdW_byA_star"),
             tags$hr(),
             h4("W_A-weighted sample, shown by A"),
             verbatimTextOutput("showtabWtdWa"),
             tags$hr(),
             h4("W_M-weighted sample, shown by A"),
             verbatimTextOutput("showtabWtdWm"),
+            tags$hr(),
+            verbatimTextOutput("lm1"),
             tags$hr()
         )
     )
