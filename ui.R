@@ -72,6 +72,8 @@ shinyUI(fluidPage(
             verbatimTextOutput("showtabWtdWm"),
             tags$hr(),
             verbatimTextOutput("lm1"),
+            tags$hr(),
+            verbatimTextOutput("lm1Unweighted"),
             tags$hr()
         )
     )

@@ -234,4 +234,8 @@ shinyServer(function(input, output) {
         print(svyglm(Ycont ~ A + A_star, svydatW()))    
     })
     
+    output$lm1Unweighted <- renderPrint({
+        print(lm(Ycont ~ A + A_star, data= dat()))    
+    })
+    
 })
